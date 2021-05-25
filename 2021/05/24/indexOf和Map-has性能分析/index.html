@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/lf-icon@32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/lf-icon@16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css" integrity="sha256-2H3fkXt6FEmrReK448mDVGKb3WW2ZZw35gI7vqHOE4Y=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;example.com&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="前情提要： 有道题：给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出 和为目标值 target  的那 两个 整数，并返回它们的数组下标。你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。你可以按任意顺序返回答案。 结题思路上是在循环这个数组的时候用给定的target减去当前循环项，看看当前数组里有没有这个循环项，答案中使用的是Map.h">
+<meta property="og:type" content="article">
+<meta property="og:title" content="indexOf、Map.has和includes性能分析.md">
+<meta property="og:url" content="http://example.com/2021/05/24/indexOf%E5%92%8CMap-has%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="前端青年客栈">
+<meta property="og:description" content="前情提要： 有道题：给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出 和为目标值 target  的那 两个 整数，并返回它们的数组下标。你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。你可以按任意顺序返回答案。 结题思路上是在循环这个数组的时候用给定的target减去当前循环项，看看当前数组里有没有这个循环项，答案中使用的是Map.h">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-05-24T15:45:35.000Z">
+<meta property="article:modified_time" content="2021-05-25T14:54:03.718Z">
+<meta property="article:author" content="凡先森">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2021/05/24/indexOf%E5%92%8CMap-has%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;http:&#x2F;&#x2F;example.com&#x2F;2021&#x2F;05&#x2F;24&#x2F;indexOf%E5%92%8CMap-has%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90&#x2F;&quot;,&quot;path&quot;:&quot;2021&#x2F;05&#x2F;24&#x2F;indexOf和Map-has性能分析&#x2F;&quot;,&quot;title&quot;:&quot;indexOf、Map.has和includes性能分析.md&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>indexOf、Map.has和includes性能分析.md | 前端青年客栈</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">前端青年客栈</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">凡先森的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E6%83%85%E6%8F%90%E8%A6%81%EF%BC%9A"><span class="nav-number">1.</span> <span class="nav-text">前情提要：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">测试过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%9C%EF%BC%9A%EF%BC%88%E6%AF%8F%E4%B8%AA%E7%BB%93%E6%9E%9C%E9%83%BD%E6%98%AF%E5%8F%9610%E6%AC%A1%E7%9A%84%E5%B9%B3%E5%9D%87%E5%80%BC%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">结果：（每个结果都是取10次的平均值）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AC%A1%E6%95%B0%E5%B1%95%E7%A4%BA"><span class="nav-number">3.1.</span> <span class="nav-text">次数展示</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA%EF%BC%9A"><span class="nav-number">4.</span> <span class="nav-text">结论：</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">凡先森</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/05/24/indexOf%E5%92%8CMap-has%E6%80%A7%E8%83%BD%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="凡先森">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="前端青年客栈">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          indexOf、Map.has和includes性能分析.md
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-05-24 23:45:35" itemprop="dateCreated datePublished" datetime="2021-05-24T23:45:35+08:00">2021-05-24</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-25 22:54:03" itemprop="dateModified" datetime="2021-05-25T22:54:03+08:00">2021-05-25</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="前情提要："><a href="#前情提要：" class="headerlink" title="前情提要："></a>前情提要：</h3><blockquote>
+<p>有道题：给定一个整数数组 nums 和一个整数目标值 target，请你在该数组中找出 和为目标值 target  的那 两个 整数，并返回它们的数组下标。你可以假设每种输入只会对应一个答案。但是，数组中同一个元素在答案里不能重复出现。你可以按任意顺序返回答案。</p>
+<p>结题思路上是在循环这个数组的时候用给定的target减去当前循环项，看看当前数组里有没有这个循环项，答案中使用的是Map.has方法来判断有没有，我使用的是indexOf来判断。</p>
+<p>因为我知道indexOf底层也是通过循环来判断，但是不知道Map.has底层逻辑是什么，也不知道这两个对性能有什么影响。这里做一次测试。</p>
+</blockquote>
+<span id="more"></span>
+<h3 id="测试过程"><a href="#测试过程" class="headerlink" title="测试过程"></a>测试过程</h3><ol>
+<li>先随机创建一个数组</li>
+</ol>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 生成随机数</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getRandom</span>(<span class="params">num</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> randomArr = [];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; num; i++) &#123;</span><br><span class="line">        randomArr.push(<span class="built_in">Math</span>.ceil(<span class="built_in">Math</span>.random()*<span class="number">10</span>));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> randomArr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>循环数组进行处理判断</li>
+</ol>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> _sumNum = <span class="number">18</span>;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getIndex</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> _randomArr = getRandom(<span class="number">10000</span>);</span><br><span class="line">    <span class="keyword">let</span> _resultArr = [];</span><br><span class="line">    <span class="built_in">console</span>.time(<span class="string">&#x27;getIndex&#x27;</span>);</span><br><span class="line">    <span class="comment">// 使用indexof方法</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; _randomArr.length; i++) &#123;</span><br><span class="line">        <span class="keyword">const</span> _randomItem = _randomArr[i];</span><br><span class="line">        <span class="keyword">if</span> (_randomArr.indexOf(_sumNum - _randomItem) &gt; -<span class="number">1</span>) &#123;</span><br><span class="line">            _resultArr.push(_randomItem, _sumNum - _randomItem);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">console</span>.time(<span class="string">&#x27;getIndex&#x27;</span>);</span><br><span class="line">    <span class="comment">// 使用includes方法</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; _randomArr.length; i++) &#123;</span><br><span class="line">        <span class="keyword">const</span> _randomItem = _randomArr[i];</span><br><span class="line">        <span class="keyword">if</span> (_randomArr.includes(_sumNum - _randomItem)) &#123;</span><br><span class="line">            _resultArr.push(_randomItem, _sumNum - _randomItem);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 使用Map处理</span></span><br><span class="line">    <span class="comment">// console.time(&#x27;getIndex&#x27;);</span></span><br><span class="line">    <span class="comment">// const _randomMap = new Map();</span></span><br><span class="line">    <span class="comment">// for (let i = 0; i &lt; _randomArr.length; i++) &#123;</span></span><br><span class="line">    <span class="comment">//     const _randomItem = _randomArr[i];</span></span><br><span class="line">    <span class="comment">//     _randomMap.set(_randomItem, 1);</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    <span class="comment">// for (let i = 0; i &lt; _randomArr.length; i++) &#123;</span></span><br><span class="line">    <span class="comment">//     const _randomItem = _randomArr[i];</span></span><br><span class="line">    <span class="comment">//     if (_randomMap.has(_sumNum - _randomItem)) &#123;</span></span><br><span class="line">    <span class="comment">//         _resultArr.push(_randomItem, _sumNum - _randomItem);</span></span><br><span class="line">    <span class="comment">//     &#125;</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    <span class="built_in">console</span>.timeEnd(<span class="string">&#x27;getIndex&#x27;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="结果：（每个结果都是取10次的平均值）"><a href="#结果：（每个结果都是取10次的平均值）" class="headerlink" title="结果：（每个结果都是取10次的平均值）"></a>结果：（每个结果都是取10次的平均值）</h3><table>
+<thead>
+<tr>
+<th>循环个数</th>
+<th>indexOf方式(单位ms)</th>
+<th>Map方式(单位ms）</th>
+<th>includes(单位ms)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>0.02803</td>
+<td>0.02813</td>
+<td>0.02951</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.20955</td>
+<td>0.07614</td>
+<td>0.22783</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.83292</td>
+<td>0.14811</td>
+<td>0.74594</td>
+</tr>
+<tr>
+<td>5000</td>
+<td>17.7615</td>
+<td>0.67639</td>
+<td>17.6322</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>66.6859</td>
+<td>3.3595</td>
+<td>69.3237</td>
+</tr>
+</tbody></table>
+<h4 id="次数展示"><a href="#次数展示" class="headerlink" title="次数展示"></a>次数展示</h4><ul>
+<li>indexOf方式<ul>
+<li>100:：<ul>
+<li>0.0229</li>
+<li>0.0458</li>
+<li>0.0300</li>
+<li>0.0258</li>
+<li>0.0261</li>
+<li>0.0261</li>
+<li>0.0249</li>
+<li>0.0261</li>
+<li>0.0268</li>
+<li>0.0258</li>
+</ul>
+</li>
+<li>500:<ul>
+<li>0.2160</li>
+<li>0.2082</li>
+<li>0.2080</li>
+<li>0.2021</li>
+<li>0.2429</li>
+<li>0.1938</li>
+<li>0.2099</li>
+<li>0.2019</li>
+<li>0.2121</li>
+<li>0.2060</li>
+</ul>
+</li>
+<li>1000：<ul>
+<li>0.7497</li>
+<li>0.9289</li>
+<li>0.8098</li>
+<li>1.0942</li>
+<li>0.9812</li>
+<li>0.7009</li>
+<li>0.7321</li>
+<li>0.7490</li>
+<li>0.8479</li>
+<li>0.7373</li>
+</ul>
+</li>
+<li>5000：<ul>
+<li>18.719</li>
+<li>18.785</li>
+<li>16.761</li>
+<li>17.603</li>
+<li>16.377</li>
+<li>16.580</li>
+<li>17.436</li>
+<li>16.925</li>
+<li>20.458</li>
+<li>17.971</li>
+</ul>
+</li>
+<li>10000：<ul>
+<li>65.756</li>
+<li>66.079</li>
+<li>65.697</li>
+<li>70.875</li>
+<li>65.729</li>
+<li>64.894</li>
+<li>65.837</li>
+<li>66.313</li>
+<li>68.960</li>
+<li>66.710</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Map方式<ul>
+<li>100:<ul>
+<li>0.0270</li>
+<li>0.0239</li>
+<li>0.0310</li>
+<li>0.0249</li>
+<li>0.0258</li>
+<li>0.0449</li>
+<li>0.0288</li>
+<li>0.0241</li>
+<li>0.0258</li>
+<li>0.0251</li>
+</ul>
+</li>
+<li>500:<ul>
+<li>0.0717</li>
+<li>0.0720</li>
+<li>0.0712</li>
+<li>0.0688</li>
+<li>0.0700</li>
+<li>0.0710</li>
+<li>0.0727</li>
+<li>0.1088</li>
+<li>0.0842</li>
+<li>0.0710</li>
+</ul>
+</li>
+<li>1000：<ul>
+<li>0.125</li>
+<li>0.1308</li>
+<li>0.1279</li>
+<li>0.1350</li>
+<li>0.125</li>
+<li>0.1298</li>
+<li>0.3139</li>
+<li>0.1340</li>
+<li>0.1318</li>
+<li>0.1279</li>
+</ul>
+</li>
+<li>5000:<ul>
+<li>0.5861</li>
+<li>0.6101</li>
+<li>0.6982</li>
+<li>0.5981</li>
+<li>0.6020</li>
+<li>0.6130</li>
+<li>1.2448</li>
+<li>0.6088</li>
+<li>0.6169</li>
+<li>0.5859</li>
+</ul>
+</li>
+<li>10000：<ul>
+<li>2.934</li>
+<li>3.756</li>
+<li>2.924</li>
+<li>3.152</li>
+<li>2.929</li>
+<li>2.934</li>
+<li>3.286</li>
+<li>3.708</li>
+<li>3.067</li>
+<li>4.905</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>includes<ul>
+<li>100:<ul>
+<li>0.0270</li>
+<li>0.0278</li>
+<li>0.0258</li>
+<li>0.0270</li>
+<li>0.0449 </li>
+<li>0.0239</li>
+<li>0.0251</li>
+<li>0.0249</li>
+<li>0.0268</li>
+<li>0.0419</li>
+</ul>
+</li>
+<li>500:<ul>
+<li>0.1999</li>
+<li>0.3391</li>
+<li>0.2119</li>
+<li>0.2231</li>
+<li>0.2077</li>
+<li>0.2519</li>
+<li>0.2089</li>
+<li>0.2111</li>
+<li>0.2128</li>
+<li>0.2119</li>
+</ul>
+</li>
+<li>1000:<ul>
+<li>0.7868</li>
+<li>0.7189</li>
+<li>0.7338</li>
+<li>0.7248</li>
+<li>0.7419</li>
+<li>0.7338</li>
+<li>0.7048</li>
+<li>0.7902</li>
+<li>0.7370</li>
+<li>0.7829</li>
+</ul>
+</li>
+<li>5000:<ul>
+<li>17.931</li>
+<li>16.903</li>
+<li>17.624</li>
+<li>17.048</li>
+<li>17.359</li>
+<li>18.250</li>
+<li>17.650</li>
+<li>18.031</li>
+<li>18.659 </li>
+<li>16.867</li>
+</ul>
+</li>
+<li>10000:<ul>
+<li>65.724</li>
+<li>70.203</li>
+<li>71.104</li>
+<li>68.052</li>
+<li>66.107</li>
+<li>67.373</li>
+<li>65.635</li>
+<li>71.907</li>
+<li>77.136</li>
+<li>69.695</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="结论："><a href="#结论：" class="headerlink" title="结论："></a>结论：</h3><blockquote>
+<p>由此可见，includes和indexOf在性能上差不多，Map.has性能要比那两个好点，对于小数据量的判断，用哪个都可以，如果出现大量数据的判断，建议使用Map.has来判断是否存在。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/05/24/hello-world/" rel="prev" title="Hello World">
+                  <i class="fa fa-chevron-left"></i> Hello World
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/05/24/rolling-ball/" rel="next" title="rolling_ball">
+                  rolling_ball <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">凡先森</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
